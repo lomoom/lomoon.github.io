@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>都昌县综合信息地图 - 网吧/LED大屏/等保单位（带编辑功能）</title>
+    <!-- 百度地图API JS v3.0 -->
+    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=9R7yMgBGJ1P5nZDXU6QuKGFBPjNKUrK3"></script>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+            z-index: 10;
+            gap: 10px;
+        }
+        .logo h1 {
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo p {
+            font-size: 0.65rem;
+            opacity: 0.8;
+        }
+        .search-area {
+            display: flex;
+            gap: 8px;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 48px;
+            align-items: center;
+        }
+        .search-area input {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 40px;
+            width: 220px;
+            outline: none;
+            font-size: 0.85rem;
+        }
+        .search-area button {
+            background: #f39c12;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 32px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 32px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        .btn-primary { background: #27ae60; }
+        .btn-primary:hover { background: #2ecc71; }
+        .btn-info { background: #2980b9; }
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        #mapContainer {
+            flex: 3;
+            height: 100%;
+            position: relative;
+        }
+        .sidebar {
+            width: 380px;
+            background: #fff;
+            border-left: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            box-shadow: -2px 0 12px rgba(0,0,0,0.08);
+            z-index: 5;
+        }
+        .detail-panel {
+            padding: 18px;
+            background: #fef9e6;
+            border-bottom: 1px solid #f0e1c0;
+        }
+        .detail-panel h3 {
+            color: #b64926;
+            border-left: 4px solid #f39c12;
+            padding-left: 12px;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        .detail-content {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #2c3e50;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .placeholder-text {
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        .list-section {
+            flex: 1;
+            padding: 16px;
+        }
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+            transition: 0.2s;
+            font-size: 0.8rem;
+        }
+        .tab-btn.active {
+            background: #2a5298;
+            color: white;
+        }
+        .unit-list {
+            list-style: none;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        .unit-list li {
+            background: #f9f9f9;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.1s;
+            border-left: 4px solid #3498db;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .unit-list li:hover {
+            background: #eef4ff;
+        }
+        .unit-list li.active {
+            background: #e8f4ff;
+            border-left-color: #2a5298;
+        }
+        .unit-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .unit-addr {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+        }
+        .edit-icon, .delete-icon {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            border-radius: 20px;
+        }
+        .edit-icon { color: #2980b9; }
+        .edit-icon:hover { background: #e0f0ff; }
+        .delete-icon { color: #e74c3c; }
+        .delete-icon:hover { background: #ffe6e5; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 550px;
+            border-radius: 28px;
+            padding: 20px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%;
+            margin: 6px 0;
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid #ccc;
+        }
+        .coord-preview {
+            background: #f0f2f5;
+            padding: 8px;
+            border-radius: 16px;
+            margin: 10px 0;
+            font-size: 0.75rem;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .save-btn { background: #27ae60; color: white; flex:1; border: none; border-radius: 40px; padding: 8px; cursor: pointer; }
+        .cancel-btn { background: #95a5a6; color: white; flex:1; border: none; border-radius: 40px; cursor: pointer; }
+        .tip {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        .search-highlight {
+            background: #fff9c4;
+            transition: 0.2s;
+        }
+        label { font-weight: 600; font-size: 0.75rem; margin-top: 6px; display: block; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="logo">
+        <h1><i class="fas fa-map-marked-alt"></i> 都昌县数字地图</h1>
+        <p>网吧 · LED大屏 · 等保单位 (支持编辑修改)</p>
+    </div>
+    <div class="search-area">
+        <input type="text" id="searchInput" placeholder="搜索单位名称/地址..." autocomplete="off">
+        <button id="searchBtn"><i class="fas fa-search"></i> 搜索</button>
+    </div>
+    <div class="toolbar">
+        <button id="openAddBtn" class="btn btn-primary"><i class="fas fa-plus"></i> 添加</button>
+        <button id="centerMapBtn" class="btn btn-info"><i class="fas fa-location-dot"></i> 重置</button>
+    </div>
+</div>
+<div class="main-container">
+    <div id="mapContainer"></div>
+    <div class="sidebar">
+        <div class="detail-panel">
+            <h3><i class="fas fa-info-circle"></i> 单位详细信息</h3>
+            <div id="detailInfo" class="detail-content">
+                <span class="placeholder-text">点击地图标记或右侧列表，查看详情</span>
+            </div>
+        </div>
+        <div class="list-section">
+            <div class="category-tabs">
+                <button class="tab-btn active" data-cat="internet"><i class="fas fa-wifi"></i> 网吧</button>
+                <button class="tab-btn" data-cat="led"><i class="fas fa-tv"></i> LED大屏</button>
+                <button class="tab-btn" data-cat="security"><i class="fas fa-shield-alt"></i> 等保单位</button>
+            </div>
+            <div style="margin: 6px 0; display: flex; justify-content: space-between;">
+                <span><i class="fas fa-list"></i> 名录列表</span>
+                <span id="listCount">(0)</span>
+            </div>
+            <ul id="unitList" class="unit-list"></ul>
+        </div>
+    </div>
+</div>
+<div class="tip"><i class="fas fa-hand-pointer"></i> 鼠标悬浮标记显示详情 | 点击右侧✏️编辑单位信息</div>
+
+<!-- 添加/编辑模态框（共用） -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle"><i class="fas fa-edit"></i> 编辑单位信息</h2>
+        <input type="hidden" id="editId">
+        <input type="hidden" id="editType">
+        <div id="editDynamicFields"></div>
+        <div class="coord-preview"><i class="fas fa-map-pin"></i> 坐标: <span id="editCoordText">不可修改，如需移动请删除后重新添加</span></div>
+        <div class="modal-buttons">
+            <button id="confirmEditBtn" class="save-btn">保存修改</button>
+            <button id="cancelEditBtn" class="cancel-btn">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 百度地图中心点 (都昌县)
+    const CENTER = { lng: 116.2052, lat: 29.2733 };
+    let map;
+    let allMarkers = [];
+    let currentData = { internet: [], led: [], security: [] };
+    let nextIds = { internet: 1, led: 1, security: 1 };
+    let currentTab = 'internet';
+    let currentHoverInfoWindow = null;
+    let lastActiveItem = null;
+
+    // 初始化地图
+    function initMap() {
+        map = new BMap.Map("mapContainer");
+        map.centerAndZoom(new BMap.Point(CENTER.lng, CENTER.lat), 15);
+        map.enableScrollWheelZoom(true);
+        map.addControl(new BMap.NavigationControl());
+        map.addControl(new BMap.ScaleControl());
+        
+        // 点击地图添加标注
+        map.addEventListener("click", (e) => {
+            openAddModalFromMap(e.point.lng, e.point.lat);
+        });
+        
+        loadStorageData();
+        renderCurrentMarkers();
+        renderListByTab(currentTab);
+    }
+    
+    // 打开添加弹窗（地图点击）
+    function openAddModalFromMap(lng, lat) {
+        if(!lng || !lat) return;
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-square"></i> 新增单位标注';
+        document.getElementById('editId').value = '';
+        document.getElementById('editType').value = currentTab;
+        generateEditFormFields(currentTab, null);
+        document.getElementById('editCoordText').innerHTML = `${lng.toFixed(6)} , ${lat.toFixed(6)} (点击地图获取)`;
+        window._editTempLng = lng;
+        window._editTempLat = lat;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+    
+    // 打开编辑弹窗
+    function openEditModal(item, type) {
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> 编辑单位信息';
+        document.getElementById('editId').value = item.id;
+        document.getElementById('editType').value = type;
+        generateEditFormFields(type, item);
+        document.getElementById('editCoordText').innerHTML = `${item.lng.toFixed(6)} , ${item.lat.toFixed(6)} (坐标不可直接修改，可删除后重新添加)`;
+        window._editTempLng = item.lng;
+        window._editTempLat = item.lat;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+    
+    // 动态生成表单
+    function generateEditFormFields(type, item) {
+        let html = '';
+        if (type === 'internet') {
+            html = `
+                <label>网吧名称 *</label><input id="edit_internet_name" value="${escapeAttr(item?.name || '')}">
+                <label>详细地址</label><textarea id="edit_internet_address">${escapeAttr(item?.address || '')}</textarea>
+                <label>法人</label><input id="edit_internet_legal" value="${escapeAttr(item?.legalPerson || '')}">
+                <label>联系电话</label><input id="edit_internet_phone" value="${escapeAttr(item?.phone || '')}">
+            `;
+        } else if (type === 'led') {
+            html = `
+                <label>单位名称 *</label><input id="edit_led_unit" value="${escapeAttr(item?.unit || '')}">
+                <label>详细地址</label><textarea id="edit_led_address">${escapeAttr(item?.address || '')}</textarea>
+                <label>大屏属性</label><select id="edit_led_property">
+                    <option value="commercial" ${item?.property === 'commercial' ? 'selected' : ''}>经营性</option>
+                    <option value="non_commercial" ${item?.property === 'non_commercial' ? 'selected' : ''}>非经营性</option>
+                </select>
+                <label>是否联网</label><select id="edit_led_online">
+                    <option value="yes" ${item?.isOnline === 'yes' ? 'selected' : ''}>是</option>
+                    <option value="no" ${item?.isOnline === 'no' ? 'selected' : ''}>否</option>
+                </select>
+                <label>责任人</label><input id="edit_led_principal" value="${escapeAttr(item?.principal || '')}">
+                <label>联系电话</label><input id="edit_led_phone" value="${escapeAttr(item?.phone || '')}">
+            `;
+        } else if (type === 'security') {
+            html = `
+                <label>单位名称 *</label><input id="edit_sec_unit" value="${escapeAttr(item?.unit || '')}">
+                <label>系统名称</label><input id="edit_sec_system" value="${escapeAttr(item?.systemName || '')}">
+                <label>等保等级</label><input id="edit_sec_level" value="${escapeAttr(item?.level || '')}">
+                <label>责任人</label><input id="edit_sec_principal" value="${escapeAttr(item?.principal || '')}">
+                <label>联系方式</label><input id="edit_sec_contact" value="${escapeAttr(item?.contact || '')}">
+            `;
+        }
+        document.getElementById('editDynamicFields').innerHTML = html;
+    }
+    
+    // 保存数据
+    function saveUnitFromModal() {
+        const id = document.getElementById('editId').value;
+        const type = document.getElementById('editType').value;
+        const lng = window._editTempLng;
+        const lat = window._editTempLat;
+        
+        if (!lng || !lat) {
+            alert("坐标无效，请重新在地图上点击添加");
+            return false;
+        }
+        
+        let updatedItem;
+        if (type === 'internet') {
+            let name = document.getElementById('edit_internet_name')?.value.trim();
+            if (!name) { alert("网吧名称不能为空"); return false; }
+            updatedItem = {
+                id: id ? parseInt(id) : nextIds[type]++,
+                name: name,
+                address: document.getElementById('edit_internet_address')?.value.trim() || "",
+                legalPerson: document.getElementById('edit_internet_legal')?.value.trim() || "",
+                phone: document.getElementById('edit_internet_phone')?.value.trim() || "",
+                lng, lat
+            };
+        } else if (type === 'led') {
+            let unit = document.getElementById('edit_led_unit')?.value.trim();
+            if (!unit) { alert("单位名称不能为空"); return false; }
+            updatedItem = {
+                id: id ? parseInt(id) : nextIds[type]++,
+                unit: unit,
+                address: document.getElementById('edit_led_address')?.value.trim() || "",
+                property: document.getElementById('edit_led_property')?.value,
+                isOnline: document.getElementById('edit_led_online')?.value,
+                principal: document.getElementById('edit_led_principal')?.value.trim() || "",
+                phone: document.getElementById('edit_led_phone')?.value.trim() || "",
+                lng, lat
+            };
+        } else {
+            let unit = document.getElementById('edit_sec_unit')?.value.trim();
+            if (!unit) { alert("单位名称不能为空"); return false; }
+            updatedItem = {
+                id: id ? parseInt(id) : nextIds[type]++,
+                unit: unit,
+                systemName: document.getElementById('edit_sec_system')?.value.trim() || "",
+                level: document.getElementById('edit_sec_level')?.value.trim() || "",
+                principal: document.getElementById('edit_sec_principal')?.value.trim() || "",
+                contact: document.getElementById('edit_sec_contact')?.value.trim() || "",
+                lng, lat
+            };
+        }
+        
+        if (id) {
+            const index = currentData[type].findIndex(i => i.id == id);
+            if (index !== -1) currentData[type][index] = updatedItem;
+            else currentData[type].push(updatedItem);
+        } else {
+            currentData[type].push(updatedItem);
+        }
+        
+        saveToLocal();
+        renderCurrentMarkers();
+        renderListByTab(currentTab);
+        closeEditModal();
+        return true;
+    }
+    
+    // 关闭弹窗
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+    
+    // 渲染地图标记
+    function renderCurrentMarkers() {
+        allMarkers.forEach(marker => map.removeOverlay(marker));
+        allMarkers = [];
+        const items = currentData[currentTab] || [];
+        
+        items.forEach(item => {
+            const pt = new BMap.Point(item.lng, item.lat);
+            const marker = new BMap.Marker(pt);
+            let labelColor = currentTab === 'internet' ? "#e67e22" : (currentTab === 'led' ? "#2980b9" : "#27ae60");
+            let displayName = item.name || item.unit;
+            
+            const label = new BMap.Label(displayName, { offset: new BMap.Size(20, -10) });
+            label.setStyle({
+                color: "#fff",
+                background: labelColor,
+                fontSize: "11px",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                border: "none",
+                pointerEvents: "none"
+            });
+            
+            marker.setLabel(label);
+            marker.extData = { type: currentTab, data: item };
+            
+            marker.addEventListener("mouseover", () => showHoverInfo(item, currentTab, marker));
+            marker.addEventListener("mouseout", hideHoverInfo);
+            marker.addEventListener("click", () => showDetailInSidebar(item, currentTab));
+            
+            map.addOverlay(marker);
+            allMarkers.push(marker);
+        });
+    }
+    
+    // 悬浮提示
+    function showHoverInfo(item, type, marker) {
+        if (currentHoverInfoWindow) map.closeInfoWindow(currentHoverInfoWindow);
+        const content = generateDetailHTML(item, type);
+        const infoWindow = new BMap.InfoWindow(content, {
+            width: 240,
+            height: 0,
+            title: "单位信息",
+            offset: new BMap.Size(0, -25)
+        });
+        map.openInfoWindow(infoWindow, marker.getPosition());
+        currentHoverInfoWindow = infoWindow;
+    }
+    
+    function hideHoverInfo() {
+        if (currentHoverInfoWindow) {
+            map.closeInfoWindow(currentHoverInfoWindow);
+            currentHoverInfoWindow = null;
+        }
+    }
+    
+    // 生成详情HTML
+    function generateDetailHTML(item, type) {
+        let html = `<div style="min-width:220px; font-size:12px;">`;
+        if (type === 'internet') {
+            html += `<div style="font-weight:bold;">🏪 ${escapeHtml(item.name)}</div>
+                     <div>📍 ${escapeHtml(item.address)}</div>
+                     <div>👤 法人: ${escapeHtml(item.legalPerson)}</div>
+                     <div>📞 ${escapeHtml(item.phone)}</div>`;
+        } else if (type === 'led') {
+            html += `<div style="font-weight:bold;">📺 ${escapeHtml(item.unit)}</div>
+                     <div>📍 ${escapeHtml(item.address)}</div>
+                     <div>📌 ${item.property === 'commercial' ? '经营性' : '非经营性'} | ${item.isOnline === 'yes' ? '已联网' : '未联网'}</div>
+                     <div>👤 ${escapeHtml(item.principal)} | 📞 ${escapeHtml(item.phone)}</div>`;
+        } else {
+            html += `<div style="font-weight:bold;">🛡️ ${escapeHtml(item.unit)}</div>
+                     <div>系统: ${escapeHtml(item.systemName)}</div>
+                     <div>等保: ${escapeHtml(item.level)}</div>
+                     <div>责任人: ${escapeHtml(item.principal)} | ${escapeHtml(item.contact)}</div>`;
+        }
+        html += `</div>`;
+        return html;
+    }
+    
+    // 侧边栏显示详情
+    function showDetailInSidebar(item, type) {
+        let html = `<div style="border-left:4px solid #f39c12; padding-left:12px;">`;
+        if (type === 'internet') {
+            html += `<div style="font-size:1rem; font-weight:bold;">🏪 ${escapeHtml(item.name)}</div>
+                     <div>📍 地址: ${escapeHtml(item.address)}</div>
+                     <div>👤 法人: ${escapeHtml(item.legalPerson)}</div>
+                     <div>📞 电话: ${escapeHtml(item.phone)}</div>`;
+        } else if (type === 'led') {
+            html += `<div style="font-size:1rem; font-weight:bold;">📺 ${escapeHtml(item.unit)}</div>
+                     <div>📍 地址: ${escapeHtml(item.address)}</div>
+                     <div>📌 属性: ${item.property === 'commercial' ? '经营性' : '非经营性'} | 联网: ${item.isOnline === 'yes' ? '是' : '否'}</div>
+                     <div>👤 责任人: ${escapeHtml(item.principal)}</div>
+                     <div>📞 电话: ${escapeHtml(item.phone)}</div>`;
+        } else {
+            html += `<div style="font-size:1rem; font-weight:bold;">🛡️ ${escapeHtml(item.unit)}</div>
+                     <div>系统: ${escapeHtml(item.systemName)}</div>
+                     <div>等保等级: ${escapeHtml(item.level)}</div>
+                     <div>责任人: ${escapeHtml(item.principal)}</div>
+                     <div>联系方式: ${escapeHtml(item.contact)}</div>`;
+        }
+        html += `<button id="flyDetailBtn" style="margin-top:10px; background:#2c3e50; border:none; border-radius:30px; padding:5px; color:white; width:100%;">📍 地图定位</button></div>`;
+        document.getElementById('detailInfo').innerHTML = html;
+        
+        document.getElementById('flyDetailBtn').onclick = () => {
+            map.flyTo(new BMap.Point(item.lng, item.lat), 18);
+        };
+        
+        // 高亮列表项
+        setActiveListItem(item.id, type);
+    }
+    
+    // 列表高亮
+    function setActiveListItem(id, type) {
+        document.querySelectorAll('#unitList li').forEach(li => li.classList.remove('active'));
+        const target = document.querySelector(`#unitList li[data-id="${id}"][data-type="${type}"]`);
+        if(target) target.classList.add('active');
+    }
+    
+    // 渲染右侧列表
+    function renderListByTab(tab) {
+        currentTab = tab;
+        const items = currentData[tab] || [];
+        const container = document.getElementById('unitList');
+        const countSpan = document.getElementById('listCount');
+        
+        countSpan.innerText = `(${items.length})`;
+        
+        if (!items.length) {
+            container.innerHTML = '<li style="justify-content:center; color:#aaa;">暂无数据，点击地图添加</li>';
+            return;
+        }
+        
+        let html = '';
+        items.forEach(item => {
+            let title = item.name || item.unit;
+            let addr = item.address || '';
+            html += `<li data-id="${item.id}" data-type="${tab}">
+                        <div style="flex:1; cursor:pointer;">
+                            <div class="unit-name">${escapeHtml(title)}</div>
+                            <div class="unit-addr">${escapeHtml(addr.substring(0, 35))}</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="edit-icon" data-id="${item.id}" data-type="${tab}" title="编辑"><i class="fas fa-pen"></i></button>
+                            <button class="delete-icon" data-id="${item.id}" data-type="${tab}" title="删除"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                     </li>`;
+        });
+        container.innerHTML = html;
+        bindListEvents();
+    }
+    
+    // 绑定列表事件
+    function bindListEvents() {
+        // 点击查看详情
+        document.querySelectorAll('#unitList li > div:first-child').forEach(div => {
+            div.addEventListener('click', (e) => {
+                const li = div.closest('li');
+                const id = parseInt(li.dataset.id);
+                const type = li.dataset.type;
+                const found = currentData[type].find(i => i.id === id);
+                if (found) {
+                    showDetailInSidebar(found, type);
+                    map.flyTo(new BMap.Point(found.lng, found.lat), 17);
+                }
+            });
+        });
+        
+        // 编辑
+        document.querySelectorAll('.edit-icon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                const type = btn.dataset.type;
+                const item = currentData[type].find(i => i.id === id);
+                if (item) openEditModal(item, type);
+            });
+        });
+        
+        // 删除
+        document.querySelectorAll('.delete-icon').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = parseInt(btn.dataset.id);
+                const type = btn.dataset.type;
+                if (confirm('确定删除该单位吗？')) {
+                    currentData[type] = currentData[type].filter(i => i.id !== id);
+                    saveToLocal();
+                    renderCurrentMarkers();
+                    renderListByTab(currentTab);
+                    document.getElementById('detailInfo').innerHTML = '<span class="placeholder-text">已删除</span>';
+                }
+            });
+        });
+    }
+    
+    // 搜索功能
+    function searchUnits(keyword) {
+        const kw = keyword.trim().toLowerCase();
+        if (!kw) {
+            renderListByTab(currentTab);
+            return;
+        }
+        
+        const items = currentData[currentTab] || [];
+        const filtered = items.filter(item => {
+            const name = (item.name || item.unit || '').toLowerCase();
+            const addr = (item.address || '').toLowerCase();
+            return name.includes(kw) || addr.includes(kw);
+        });
+        
+        const container = document.getElementById('unitList');
+        if (!filtered.length) {
+            container.innerHTML = '<li style="text-align:center; color:#999;">未找到匹配单位</li>';
+            return;
+        }
+        
+        let html = '';
+        filtered.forEach(item => {
+            let title = item.name || item.unit;
+            let addr = item.address || '';
+            html += `<li data-id="${item.id}" data-type="${currentTab}" class="search-highlight">
+                        <div style="flex:1;"><div class="unit-name">${escapeHtml(title)}</div><div class="unit-addr">${escapeHtml(addr.substring(0, 35))}</div></div>
+                        <div class="action-buttons">
+                            <button class="edit-icon" data-id="${item.id}" data-type="${currentTab}"><i class="fas fa-pen"></i></button>
+                            <button class="delete-icon" data-id="${item.id}" data-type="${currentTab}"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                     </li>`;
+        });
+        container.innerHTML = html;
+        bindListEvents();
+    }
+    
+    // 本地存储
+    function saveToLocal() {
+        localStorage.setItem('duchang_map_edit', JSON.stringify({
+            internet: currentData.internet,
+            led: currentData.led,
+            security: currentData.security,
+            nextIds
+        }));
+    }
+    
+    // 读取本地数据
+    function loadStorageData() {
+        const raw = localStorage.getItem('duchang_map_edit');
+        if (raw) {
+            try {
+                const d = JSON.parse(raw);
+                currentData = {
+                    internet: d.internet || [],
+                    led: d.led || [],
+                    security: d.security || []
+                };
+                nextIds = d.nextIds || { internet:1, led:1, security:1 };
+                
+                // 修正ID自增
+                ['internet','led','security'].forEach(t => {
+                    const maxId = currentData[t].length ? Math.max(...currentData[t].map(i=>i.id)) : 0;
+                    if(maxId >= nextIds[t]) nextIds[t] = maxId + 1;
+                });
+                return;
+            } catch(e) {}
+        }
+        initDefault();
+    }
+    
+    // 默认数据
+    function initDefault() {
+        currentData = {
+            internet: [{ id:1, name:"极速网咖(东风大道店)", address:"东风大道与县府路交叉口", legalPerson:"张伟", phone:"0792-5221234", lng:116.2078, lat:29.2729 }],
+            led: [{ id:1, unit:"人民广场LED大屏", address:"人民广场北侧", property:"non_commercial", isOnline:"yes", principal:"王主任", phone:"0792-5566001", lng:116.2035, lat:29.2761 }],
+            security: [{ id:1, unit:"都昌县人民医院", systemName:"HIS系统", level:"三级", principal:"陈院长", contact:"0792-5223111", lng:116.2012, lat:29.2710 }]
+        };
+        nextIds = { internet:2, led:2, security:2 };
+        saveToLocal();
+    }
+    
+    // XSS过滤
+    function escapeHtml(str) {
+        if(!str) return '';
+        return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m]));
+    }
+    function escapeAttr(str) {
+        if(!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    
+    // 重置视图
+    function resetView() {
+        map.flyTo(new BMap.Point(CENTER.lng, CENTER.lat), 14);
+    }
+
+    // 绑定事件
+    document.getElementById('searchBtn').onclick = () => {
+        searchUnits(document.getElementById('searchInput').value);
+    };
+    
+    document.getElementById('searchInput').addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') searchUnits(e.target.value);
+    });
+    
+    document.getElementById('openAddBtn').onclick = () => {
+        alert("请在地图任意位置点击，即可添加当前分类标注");
+    };
+    
+    document.getElementById('centerMapBtn').onclick = resetView;
+    document.getElementById('confirmEditBtn').onclick = saveUnitFromModal;
+    document.getElementById('cancelEditBtn').onclick = closeEditModal;
+    
+    // 标签切换
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentTab = btn.dataset.cat;
+            renderCurrentMarkers();
+            renderListByTab(currentTab);
+            document.getElementById('searchInput').value = '';
+            document.getElementById('detailInfo').innerHTML = '<span class="placeholder-text">点击地图标记或右侧列表，查看详情</span>';
+        });
+    });
+
+    // 初始化
+    window.onload = initMap;
+</script>
+</body>
+</html>
